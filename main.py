@@ -6,15 +6,21 @@ from config import CONFIG, keys_dict
 
 class Player:
     class Events:
-        def __init__(self):
+        def __init__(self, go_func=None):
             self.go_events = list()
-
+            self.events_set = set()
+            self.reaction_dict = {
+                'go': go_func
+            }
         def clear(self):
             self.go_events = list()
 
+
+
     def __init__(self, cords: list):
         self.cords = cords
-        self.events = Player.Events()
+        self.events = Player.Events(self.go)
+
         self.move_buffer = [0, 0]
         self.obj_type = 'Player'
         self.speed = 70  # Points per second
@@ -22,8 +28,8 @@ class Player:
         self.sprite_size = self.sprite.get_rect().size
 
     def check_events(self, time_delta):
-        if self.events.go_events:
-            self.go(time_delta)
+        for i in self.events.events_set:
+            self.events.reaction_dict[i](time_delta)
 
         self.events.clear()
 
@@ -38,9 +44,6 @@ class Player:
         self.move_buffer[1] += y
 
     def go(self, time_delta):
-        if len(self.events.go_events) > 1:
-            pass
-            g = 7
         amount_of_pixels_to_move = self.speed / 1000 * time_delta
         x_move, y_move = 0, 0
 
@@ -89,7 +92,7 @@ class KeyController:
         for i in self.go_controls:
             if keys_checker[i]:
                 self.player_obj.events.go_events.append(self.go_controls[i])
-
+                self.player_obj.events.events_set.add('go')
 
 pygame.init()
 
