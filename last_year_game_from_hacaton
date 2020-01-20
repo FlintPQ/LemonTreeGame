@@ -1,0 +1,331 @@
+import pygame as pg
+
+pg.init()
+#pg.mixer.music.load("Mortal Kombat – Soundtrack.mp3")
+#pg.mixer.music.play()
+
+
+class Bomb:
+    def __init__(self, x, y, number):
+        self.damage = 30
+        self.x = x
+        self.y = y
+        self.w, self.h = 20, 20
+        self.which_player = number
+        self.n = 0
+
+
+class Box:
+    def __init__(self, x, y, w, h, color):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.color = color
+
+
+portal_red = Box(1400, 500, 100, 100, (255, 0, 0, 0))
+portal_blue = Box(0, 700, 100, 100, (0, 0, 255, 0))
+
+list_of_bombs = []
+
+list_of_bullets = []
+
+
+class Bullet:
+    def __init__(self, x, y, rotat):
+        self.x = x
+        self.y = y
+        self.w = 3
+        self.h = 3
+        self.speed = 30
+        self.rotation = rotat
+
+    def destroy(self):
+        del list_of_bullets[list_of_bullets.index(self)]
+
+    def hit(self):
+        if set(range(self.x, self.x + 3)) & set(range(player_1.x, player_1.x + player_1.w)) \
+                and set(range(self.y, self.y + self.h)) & set(range(player_1.y, player_1.y + player_1.h))\
+                and self not in player_1.self_bullets:
+            player_1.hp -= 5
+            self.destroy()
+            return
+
+        if set(range(self.x, self.x + 3)) & set(range(player_2.x, player_2.x + player_2.w)) \
+                and set(range(self.y, self.y + self.h)) & set(range(player_2.y, player_2.y + player_2.h)) \
+                and self not in player_2.self_bullets:
+            player_2.hp -= 5
+            self.destroy()
+            return
+
+        for i in listik:
+            if i != player_1 and i != player_2:
+                if set(range(self.x, self.x + 3)) & set(range(i.x, i.x + i.w)) \
+                        and set(range(self.y, self.y + self.h)) & set(range(i.y, i.y + i.h)):
+                    self.destroy()
+                    return
+        return False
+
+    def move(self):
+        if self.rotation == 'up':
+            self.y -= 1
+        if self.rotation == 'down':
+            self.y += 1
+        if self.rotation == 'left':
+            self.x -= 1
+        if self.rotation == 'right':
+            self.x += 1
+
+    def draw(self):
+        pg.draw.circle(display, (0, 0, 0, 255), (self.x, self.y), 3)
+
+
+class Creature(pg.sprite.Sprite):
+    def __init__(self, x, y, w, h, color):
+        global list_of_bombs
+        super(Creature, self).__init__()
+        self.images = []
+        self.index = 0
+        self.hp = 100
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.angle = 0
+        self.color = color
+        self.is_dead = False
+        self.number_of_bombs = 5
+        self.direction = 'right'
+        self.self_bullets = []
+
+    def update(self):
+        self.index += 1
+        if self.index >= len(self.images):
+                self.index = 0
+        #self.image = self.imaeges[self.index]
+
+    def get_coords(self):
+        return self.x, self.y, self.h, self.w
+
+    def die(self):
+        if self.hp <= 0:
+            self.is_dead = True
+
+    def add_bomb(self, number):
+        if self.number_of_bombs > 0:
+            list_of_bombs.append(Bomb(self.x, self.y, number))
+            self.number_of_bombs -= 1
+
+    def shoot(self):
+        # if time.clock() - self.last_hoot > self.shoot_period:
+        list_of_bullets.append(Bullet(self.x, self.y, self.direction))
+        self.self_bullets.append(list_of_bullets[-1])
+        # self.last_hoot = time.clock()
+
+
+    #def draw(self, screen):
+        #screen.blit(self.image, self.rect)
+
+
+player_1 = Creature(0, 0, 50, 50, (255, 0, 0, 255))
+player_2 = Creature(1550, 850, 50, 50, (0, 0, 255, 255))
+listik = [player_1, player_2]
+coords = [(70, 0, 20, 100), (90, 80, 200, 20),
+    (70, 250, 220, 20), (70, 400, 20, 100),
+    (90, 480, 200, 20), (270, 500, 20, 200),
+    (150, 600, 20, 200), (150, 400, 600, 20),
+    (400, 420, 20, 100), (850, 400, 100, 20),
+    (930, 420, 20, 100), (930, 620, 20, 200),
+    (600, 150, 300, 20), (700, 170, 20, 100),
+    (930, 250, 20, 50), (1200, 0, 20, 300),
+    (1200, 500, 20, 400), (1300, 100, 200, 20),
+    (1480, 120, 20, 300)]
+for i in coords:
+    listik.append(Box(i[0], i[1], i[2], i[3], (255, 255, 0, 0)))
+
+
+def who_wins():
+    if player_1.hp <= 0:
+        pg.display.blit()
+
+
+def move_1(player, list_obj):
+    x = player.x
+    y = player.y
+    w = player.w
+    h = player.h
+    global pressed
+    for i in list_obj:
+        if pressed[pg.K_RIGHT] and i is not player and set(range(x + 5, x + 5 + w)) & set(range(i.x, i.x + i.w))\
+                and set(range(y, y + h)) & set(range(i.y, i.y + i.h)):
+            return False
+        elif pressed[pg.K_LEFT] and i is not player and set(range(x - 5, x - 5 + w)) & set(range(i.x, i.x + i.w))\
+                and set(range(y, y + h)) & set(range(i.y, i.y + i.h)):
+            return False
+        elif pressed[pg.K_UP] and i is not player and set(range(y - 5, y - 5 + h)) & set(range(i.y, i.y + i.h))\
+                and set(range(x, x + w)) & set(range(i.x, i.x + i.w)):
+            return False
+        elif pressed[pg.K_DOWN] and i is not player and set(range(y + 5, y + 5 + h)) & set(range(i.y, i.y + i.h))\
+                and set(range(x, x + w)) & set(range(i.x, i.x + i.w)):
+            return False
+    if pressed[pg.K_RIGHT] and x + w + 5 < 1600:
+        player.x += 5
+        player.direction = 'right'
+        return True
+    if pressed[pg.K_LEFT] and x - 5 > 0:
+        player.x -= 5
+        player.direction = 'left'
+        return True
+    if pressed[pg.K_UP] and y - 5 > 0:
+        player.y -= 5
+        player.direction = 'up'
+        return True
+    if pressed[pg.K_DOWN] and y + h + 5 < 900:
+        player.y += 5
+        player.direction = 'down'
+        return True
+
+
+def move_2(player, list_obj):
+    x = player.x
+    y = player.y
+    w = player.w
+    h = player.h
+    global pressed
+    for i in list_obj:
+        if pressed[pg.K_d] and i is not player and set(range(x + 5, x + 5 + w)) & set(range(i.x, i.x + i.w))\
+                and set(range(y, y + h)) & set(range(i.y, i.y + i.h)):
+            return False
+        elif pressed[pg.K_a] and i is not player and set(range(x - 5, x - 5 + w)) & set(range(i.x, i.x + i.w))\
+                and set(range(y, y + h)) & set(range(i.y, i.y + i.h)):
+            return False
+        elif pressed[pg.K_w] and i is not player and set(range(y - 5, y - 5 + h)) & set(range(i.y, i.y + i.h))\
+                and set(range(x, x + w)) & set(range(i.x, i.x + i.w)):
+            return False
+        elif pressed[pg.K_s] and i is not player and set(range(y + 5, y + 5 + h)) & set(range(i.y, i.y + i.h))\
+                and set(range(x, x + w)) & set(range(i.x, i.x + i.w)):
+            return False
+    if pressed[pg.K_d] and x + 5 + w < 1600:
+        player.x += 5
+        player.direction = 'right'
+        return True
+    if pressed[pg.K_a] and x - 5 > 0:
+        player.x -= 5
+        player.direction = 'left'
+        return True
+    if pressed[pg.K_w] and y - 5 > 0:
+        player.y -= 5
+        player.direction = 'up'
+        return True
+    if pressed[pg.K_s] and y + h + 5 < 900:
+        player.y += 5
+        player.direction = 'down'
+
+
+clock = pg.time.Clock()
+display: pg.Surface = pg.display.set_mode((1600, 900), 0, 32)
+
+
+run = True
+while run:
+    display.fill(pg.Color('White'))
+    pressed = pg.key.get_pressed()
+#    if player_1.is_dead
+for e in pg.event.get():
+        if pressed[pg.K_e]:
+            player_2.shoot()
+        if pressed[pg.K_l]:
+            player_1.shoot()
+        if e.type == pg.QUIT:
+            run = False
+        if pressed[pg.K_q]:
+            player_2.add_bomb(2)
+        if pressed[pg.K_DELETE]:
+            player_1.add_bomb(1)
+
+    # отрисовка всего
+for i in listik:
+    pg.draw.rect(display, i.color, (i.x, i.y, i.w, i.h))
+    pg.draw.rect(display, portal_red.color,
+    (portal_red.x, portal_red.y,
+    portal_red.w, portal_red.h))
+    pg.draw.rect(display, portal_blue.color,
+    (portal_blue.x, portal_blue.y,
+    portal_blue.w, portal_blue.h))
+
+    # перемещение героев
+    if pressed[pg.K_RIGHT] or pressed[pg.K_LEFT] or pressed[pg.K_DOWN] or pressed[pg.K_UP]:
+        move_1(player_1, listik)
+    if pressed[pg.K_w] or pressed[pg.K_a] or pressed[pg.K_d] or pressed[pg.K_s]:
+        move_2(player_2, listik)
+
+    if set(range(player_1.x + 5, player_1.x + 5 + player_1.w))\
+        & set(range(portal_red.x, portal_red.x + portal_red.w))\
+        and set(range(player_1.y, player_1.y + player_1.h))\
+        & set(range(portal_red.y, portal_red.y + portal_red.h)):
+        picture = pg.image.load('красный.png')
+        display.blit(picture, (0, 0))
+
+    if set(range(player_2.x + 5, player_2.x + 5 + player_2.w))\
+            & set(range(portal_blue.x, portal_blue.x + portal_blue.w))\
+            and set(range(player_2.y, player_2.y + player_2.h))\
+            & set(range(portal_blue.y, portal_blue.y + portal_blue.h)):
+        picture = pg.image.load('синий.png')
+        display.blit(picture, (0, 0))
+
+    # отрисовка бомб
+for i in list_of_bombs:
+        if i.n < 20:
+            pg.draw.rect(display, (0, 0, 0), (i.x, i.y, i.w, i.h))
+            i.n += 1
+
+# взрыв бомб
+for i in list_of_bombs:
+    if i.which_player == 2 and set(range(player_1.x, player_1.x + player_1.w)) & set(range(i.x, i.x + i.w))\
+            and set(range(player_1.y, player_1.y + player_1.h)) & set(range(i.y, i.y + i.h)):
+        player_1.hp -= i.damage
+        del list_of_bombs[list_of_bombs.index(i)]
+    for i in list_of_bombs:
+        if i.which_player == 1 and set(range(player_2.x, player_2.x + player_2.w)) & set(range(i.x, i.x + i.w))\
+                and set(range(player_2.y, player_2.y + player_2.h)) & set(range(i.y, i.y + i.h)):
+            player_2.hp -= i.damage
+            del list_of_bombs[list_of_bombs.index(i)]
+
+    # оброботка пуль
+for b in list_of_bullets:
+    for i in range(b.speed):
+        b.move()
+        if b.hit():
+            break
+        b.draw()
+
+    if player_1.hp <= 0:
+        picture = pg.image.load('синий.png')
+        display.blit(picture, (0, 0))
+
+    if player_2.hp <= 0:
+        picture = pg.image.load('красный.png')
+        display.blit(picture, (0, 0))
+    # новая игра
+    if pressed[pg.K_SPACE]:
+        list_of_bombs = []
+        list_of_bullets = []
+        player_1 = Creature(0, 0, 50, 50, (255, 0, 0, 255))
+        player_2 = Creature(600, 0, 50, 50, (0, 0, 255, 255))
+        listik = [player_1, player_2]
+        coords = [(70, 0, 20, 100), (90, 80, 200, 20),
+                    (70, 250, 220, 20), (70, 400, 20, 100),
+                    (90, 480, 200, 20), (270, 500, 20, 200),
+                    (150, 600, 20, 200), (150, 400, 600, 20),
+                    (400, 420, 20, 100), (850, 400, 100, 20),
+                    (930, 420, 20, 100), (930, 620, 20, 200),
+                    (600, 150, 300, 20), (700, 170, 20, 100),
+                    (930, 250, 20, 50), (1200, 0, 20, 300),
+                    (1200, 500, 20, 400), (1300, 100, 200, 20),
+                    (1480, 120, 20, 300)]
+        for i in coords:
+            listik.append(Box(i[0], i[1], i[2], i[3], (255, 255, 0, 0)))
+
+    clock.tick(60)
+    pg.display.flip()
