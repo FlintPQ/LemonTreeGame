@@ -3,6 +3,8 @@ import string
 from config import CONFIG
 import pygame
 from config import CONFIG, keys_dict
+from animation import Animation
+
 
 class Player:
     class Events:
@@ -12,15 +14,17 @@ class Player:
             self.reaction_dict = {
                 'go': go_func
             }
+
         def clear(self):
             self.go_events = list()
-
-
 
     def __init__(self, cords: list):
         self.cords = cords
         self.events = Player.Events(self.go)
-
+        self.animation_dict = {
+            'go_forward': Animation('sheet.png', 4, 3)
+        }
+        self.animation = Animation('idle.png', 1, 1)
         self.move_buffer = [0, 0]
         self.obj_type = 'Player'
         self.speed = 70  # Points per second
@@ -33,7 +37,6 @@ class Player:
 
         self.events.clear()
 
-
     def change_pos(self):
         self.cords[0] += self.move_buffer[0]
         self.cords[1] += self.move_buffer[1]
@@ -44,6 +47,7 @@ class Player:
         self.move_buffer[1] += y
 
     def go(self, time_delta):
+        self.animation = self.animation_dict['go_forward']
         amount_of_pixels_to_move = self.speed / 1000 * time_delta
         x_move, y_move = 0, 0
 
@@ -62,15 +66,15 @@ class Player:
 
         self.move(x_move, y_move)
 
-    def draw(self):
+    def draw(self, time_delta):
+        cur_image = self.animation.get_next_sprite(time_delta)
         image_cords = (self.cords[0] - self.sprite_size[0] // 2, self.cords[1] - self.sprite_size[1] // 2)
-        win.blit(self.sprite, image_cords)
-
+        win.blit(cur_image,  image_cords)
 
     def update(self, time_delta):
         self.check_events(time_delta)
         self.change_pos()
-        self.draw()
+        self.draw(time_delta)
 
 
 class KeyController:
@@ -94,6 +98,7 @@ class KeyController:
                 self.player_obj.events.go_events.append(self.go_controls[i])
                 self.player_obj.events.events_set.add('go')
 
+
 pygame.init()
 
 win = pygame.display.set_mode((500, 500))
@@ -113,13 +118,11 @@ while run:
         if event.type == pygame.QUIT:
             run = False
 
-
     keys_checker = pygame.key.get_pressed()
     MainGameController.do_actions(keys_checker)
 
     player.update(time_delta)
-    #print(type(player))
-
+    # print(type(player))
 
     pygame.display.flip()
 
@@ -128,6 +131,6 @@ while run:
         pygame.time.wait(8 - time_delta)
         time_delta = 8
 
-    #print(proj_clock.get_fps())
+    # print(proj_clock.get_fps())
 
 pygame.quit()
