@@ -3,7 +3,7 @@ import string
 from config import CONFIG
 import pygame
 from config import CONFIG, keys_dict
-from animation import Animation
+from utils import Animation
 
 
 class Player:
@@ -92,44 +92,60 @@ class KeyController:
 
         }
 
-    def do_actions(self, keys_checker):
+    def send_actions(self, keys_checker):
         for i in self.go_controls:
             if keys_checker[i]:
                 self.player_obj.events.go_events.append(self.go_controls[i])
                 self.player_obj.events.events_set.add('go')
 
 
-pygame.init()
+class Game:
+    def __init__(self):
+        self.RUN = True
+        self.global_game_time = 0
+        self.CUR_time_delta = 0
+        self.clocker = pygame.time.Clock()
+        self.player = Player([100, 100])
+        self.object_list = list().append(self.player)
+        self.key_controller = KeyController(self.player)
 
+    def check_keyboard(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+
+        keys_checker = pygame.key.get_pressed()
+        self.key_controller.send_actions(keys_checker)
+
+    def check_collisions(self):
+
+    def time_delta_update(self):
+        self.CUR_time_delta = self.clocker.get_time()
+        if self.CUR_time_delta < 8:
+            pygame.time.wait(8 - self.CUR_time_delta)
+            self.CUR_time_delta = 8
+
+    def update_state(self):
+        win.fill(pygame.Color('Black'))
+
+        for obj in self.object_list:
+            obj.update()
+
+        pygame.display.flip()
+
+    def runGame(self):
+        while self.RUN:
+            self.clocker.tick()
+            self.check_keyboard()
+            self.update_state()
+            self.time_delta_update()
+
+pygame.init()
 win = pygame.display.set_mode((500, 500))
 pygame.display.set_caption("Game")
-time_delta = 0
-run = True
-proj_clock = pygame.time.Clock()
-player = Player([100, 100])
 
-MainGameController = KeyController(player)
 
-while run:
-    proj_clock.tick()
-    win.fill(pygame.Color('Black'))
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-
-    keys_checker = pygame.key.get_pressed()
-    MainGameController.do_actions(keys_checker)
-
-    player.update(time_delta)
-    # print(type(player))
-
-    pygame.display.flip()
-
-    time_delta = proj_clock.get_time()
-    if time_delta < 8:
-        pygame.time.wait(8 - time_delta)
-        time_delta = 8
 
     # print(proj_clock.get_fps())
 
