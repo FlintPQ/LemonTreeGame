@@ -56,16 +56,23 @@ def get_dot_angle_on_circle(cords, center_cords):
         a = a + 360
     return a
 
+def summarize_angles(angle1, angle2):
+    angle1 = angle1 + angle2
+    if angle1 >= 360:
+        angle1 -= 360
 
 class HitBoxDot:
-    def __init__(self, cords, basic_angle):
+    def __init__(self, cords, R, basic_angle):
         self.x = cords[0]
         self.y = cords[1]
+        self.distance_from_center = R
         self.basic_angle = basic_angle
 
+    def update(self, center_cords, angle):
+        self.x, self.y = cords_dot_on_circle(summarize_angles(self.basic_angle, angle), center_cords, self.distance_from_center)
 
 class HitBox:
-    def __init__(self, cords, width, height, angle):
+    def __init__(self, cords: list, width, height, angle: list):
         self.cords = cords
         self.angle = angle
         self.width = width
@@ -77,22 +84,17 @@ class HitBox:
         d = (self.cords[0] + self.width // 2, self.cords[1] + self.height // 2)
 
         self.dots_list = [
-                HitBoxDot(a, get_dot_angle_on_circle(a, self.cords)),
-                HitBoxDot(b, get_dot_angle_on_circle(b, self.cords)),
-                HitBoxDot(c, get_dot_angle_on_circle(c, self.cords)),
-                HitBoxDot(d, get_dot_angle_on_circle(d, self.cords))
+                HitBoxDot(a, self.R, get_dot_angle_on_circle(a, self.cords)),
+                HitBoxDot(b, self.R, get_dot_angle_on_circle(b, self.cords)),
+                HitBoxDot(c, self.R, get_dot_angle_on_circle(c, self.cords)),
+                HitBoxDot(d, self.R, get_dot_angle_on_circle(d, self.cords))
             ]
 
     def update(self):
-        R =
-        x = x0 + 50 * math.sin(radians(90))
-        y = y0 + 50 * math.cos(radians(90))
-        self.dots_cords = [
-            [self.cords[0] + R * math.sin(math.radians(90)), self.cords[1] - self.height // 2],
-            [self.cords[0] + self.width // 2, self.cords[1] - self.height // 2],
-            [self.cords[0] - self.width // 2, self.cords[1] + self.height // 2],
-            [self.cords[0] + self.width // 2, self.cords[1] + self.height // 2]
-        ]
+        for _ in self.dots_list:
+            _.update(self.cords, self.angle[0])
+
+
 
 
 class Physics:
@@ -100,21 +102,7 @@ class Physics:
         self.all_objects = cur_games_obj_list
 
     def check_box_collision(self, box1, box2):
-        lines1 = [
-            (box1[0], box1[1]),
-            (box1[1], box1[2]),
-            (box1[2], box1[3]),
-            (box1[3], box1[0]),
-        ]
 
-        lines2 = [
-            (box2[0], box2[1]),
-            (box2[1], box2[2]),
-            (box2[2], box2[3]),
-            (box2[3], box2[0]),
-        ]
-
-        checks = list()
         for i in range(len(lines1)):
             if
 
@@ -137,7 +125,7 @@ class Physics:
             if Ua >= 0 & Ua <= 1 & Ub >= 0 & Ub <= 1:
                 return 1  # Lines have collision and they are not parallel
             else:
-                return 0  # Lines hasn't got collision
+                return 0  # Lines hasn't got collision and they are not parallel
 
 
 class PhysicsTrait:
