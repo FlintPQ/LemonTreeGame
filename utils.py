@@ -35,12 +35,12 @@ class Animation:
             self._time_from_last_sprite_update_buffer = 0
             if reversed:
                 self.cur_sprite_index = (
-                                                    self.cur_sprite_index - how_many_sprites_passed) % self.sprite_sheet.totalCellCount
+                                            self.cur_sprite_index - how_many_sprites_passed) % self.sprite_sheet.totalCellCount
 
 
             else:
                 self.cur_sprite_index = (
-                                                    self.cur_sprite_index + how_many_sprites_passed) % self.sprite_sheet.totalCellCount
+                                            self.cur_sprite_index + how_many_sprites_passed) % self.sprite_sheet.totalCellCount
 
         return self.sprite_sheet.get_sprite(self.cur_sprite_index)
 
@@ -103,12 +103,23 @@ class Physics:
 
     def check_box_collision(self, box1, box2):
 
-        for i in range(len(lines1)):
-            if
+        for i in range(len(box1.dots_list)):
+            dot1 = box1.dots_list[i]
+            dot2 = box1.dots_list[(i + 1) % 4]
+            for j in box2.dots_list:
+                dot3 = box2.dots_list[j]
+                dot4 = box2.dots_list[(j + 1) % 4]
 
-    def check_lines_collision(self, cords1, cords2):
-        x1, y1, x2, y2 = cords1
-        x3, y3, x4, y4 = cords2
+                if self.check_lines_collision(dot1, dot2, dot3, dot4) >= 1:
+                    return True
+                else:
+                    return False
+
+    def check_lines_collision(self, cords1, cords2, cords3, cords4):
+        x1, y1 = cords1
+        x2, y2 = cords2
+        x3, y3 = cords3
+        x4, y4 = cords4
         denominator = (y4 - y3) * (x1 - x2) - (x4 - x3) * (y1 - y2)
         if denominator == 0:
             if (x1 * y2 - x2 * y1) * (x4 - x3) - (x3 * y4 - x4 * y3) * (x2 - x1) == 0 & (x1 * y2 - x2 * y1) * (
@@ -128,9 +139,10 @@ class Physics:
                 return 0  # Lines hasn't got collision and they are not parallel
 
 
-class PhysicsTrait:
+class IPhysics:
     def __init__(self):
         self.physics_flags = {'uses_physics'}
+        self.hitbox = HitBox(self.cords)
 
 
 pygame.init()
