@@ -23,24 +23,25 @@ class SpriteSheet:
 class Animation:
     def __init__(self, filename='None', cols=-1, rows=-1):
         self.sprite_sheet = SpriteSheet(filename, cols, rows)
-        self.animation_speed = 250  # pic time in milisec
+        self.animation_speed = 500  # pic time in milisec
         self.cur_sprite_index = 0
         self._time_from_last_sprite_update_buffer = 0
 
     def get_next_sprite(self, timedelta, reversed=False):
         self._time_from_last_sprite_update_buffer += timedelta
-        how_many_sprites_passed = math.floor(self._time_from_last_sprite_update_buffer / self.animation_speed)
+        how_many_sprites_passed = math.floor(
+            self._time_from_last_sprite_update_buffer / self.animation_speed)
 
         if how_many_sprites_passed >= 1:
             self._time_from_last_sprite_update_buffer = 0
             if reversed:
                 self.cur_sprite_index = (
-                                            self.cur_sprite_index - how_many_sprites_passed) % self.sprite_sheet.totalCellCount
-
-
+                                            self.cur_sprite_index - how_many_sprites_passed)\
+                                        % self.sprite_sheet.totalCellCount
             else:
                 self.cur_sprite_index = (
-                                            self.cur_sprite_index + how_many_sprites_passed) % self.sprite_sheet.totalCellCount
+                                            self.cur_sprite_index + how_many_sprites_passed)\
+                                        % self.sprite_sheet.totalCellCount
 
         return self.sprite_sheet.get_sprite(self.cur_sprite_index)
 
@@ -56,10 +57,12 @@ def get_dot_angle_on_circle(cords, center_cords):
         a = a + 360
     return a
 
+
 def summarize_angles(angle1, angle2):
     angle1 = angle1 + angle2
     if angle1 >= 360:
         angle1 -= 360
+
 
 class HitBoxDot:
     def __init__(self, cords, R, basic_angle):
@@ -70,6 +73,7 @@ class HitBoxDot:
 
     def update(self, center_cords, angle):
         self.x, self.y = cords_dot_on_circle(summarize_angles(self.basic_angle, angle), center_cords, self.distance_from_center)
+
 
 class HitBox:
     def __init__(self, cords: list, width, height, angle: list):
@@ -93,8 +97,6 @@ class HitBox:
     def update(self):
         for _ in self.dots_list:
             _.update(self.cords, self.angle[0])
-
-
 
 
 class Physics:
