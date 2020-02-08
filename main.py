@@ -4,82 +4,193 @@ from config import CONFIG
 import pygame
 from config import CONFIG, keys_dict
 from utils import Animation
+import os
+
+
+def load_image(name, colorkey=None):
+    fullname = os.path.join(name)
+    image = pygame.image.load(fullname)
+    if colorkey is not None:
+        if colorkey == -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey)
+    else:
+        image = image.convert_alpha()
+    return image
 
 
 class Weapon:
     def __init__(self):
-        self.small_size = 25, 25
-        self.big_size = 50, 50
-        self.damage = 30
+        self.image = load_image('weapon.png')
+
+    def draw(self, cords):
+        win.blit(self.image, cords)
+
+
+class Inventory:
+    def __init__(self):
+        self.capacity = []
+        self.len = 25
+        self.x = 40
+        self.y = 40
+        self.w = 600
+        self.h = 640
+        self.cells_w, self.cells_h = 560, 600
+        self.cross_x = 580
+        self.cross_y = 60
+        self.side = 20
+        self.cells_x, self.cells_y = 60, 60
+        self.image = load_image('weapon.png')
+
+    def get_weapon(self, cell):
+        return self.capacity[cell]
+
+    def append(self, obj):
+        if len(self.capacity) < self.len:
+            self.capacity.append(obj)
+
+    def delete(self, cell):
+        del self.capacity[cell]
 
 
 class Chest:
-    class Chest_Events:
-        def __init__(self, open_func=None, close_func=None,
-                     append=None, delete=None):
-            self.go_events = list()
-            self.events_set = set()
-            self.reaction_dict = {
-                'open': open_func,
-                'close': close_func,
-                'append': append,
-                'delete': delete
-            }
-
-        def clear(self):
-            self.go_events = list()
-
-    def __init__(self, cords: list):
-        self.cords = cords
-        self.h = 50
-        self.w = 50
+    def __init__(self, x, y, game, *args):
+        self.x = x
+        self.y = y
+        self.capacity = 25
+        self.content = list(args)
+        self.h = 31
+        self.w = 30
+        self.cell_side = 120
+        self.open_window_x = 650
+        self.open_window_y = 60
+        self.open_window_h = 600
+        self.open_window_w = 600
+        self.cross_x = self.cross_y = self.cross_side = 30
         self.animation_dict = {
-            'closed': Animation('', 1, 4)
+            'closed_or_opening': Animation('chest.jpeg', 1, 4)
         }
-        self.events = Chest.Chest_Events(self.open_func(), self.close_func(),
-                                         self.append, self.delete)
-        self.len = 25
-        self.content = [[None, None, None, None, None] * 5]
+        self.animation = Animation('opa.png', 1, 1)
+        self.static_image = load_image('one_chest.png')
+        self.open_chest_image = load_image('open_chest_image.PNG')
+        self.events = []
+        self.game = game
+        self.player = game.player
 
-    def open_func(self):  # draw opening chest and draw inside
-        pass
-
-    def close_func(self):  # draw closing chest
-        pass
+    def check_cell(self, x, y):
+        if self.open_window_x < x < self.open_window_x + self.open_window_w \
+                and self.open_window_y < y < self.open_window_h:
+            cell_x = (x - self.open_window_x) // self.cell_side
+            cell_y = (y - self.open_window_y) // self.cell_side
+            return cell_x, cell_y
+        return False
 
     def append(self, thing, x, y):
-        can_be_appended = False
-        if not self.content[x][y]:
-            self.content[x][y] = thing
-        else:
-            for i in range(len(self.content)):
-                for j in range(i):
-                    if not j:
-                        self.content[i][j] = thing
-                        can_be_appended = True
-                        break
-        if not can_be_appended:
-            return False
-        return True
+        if not self.content[x * y]:
+            self.content[x * y - 1] = thing
+            return True
+        return False
 
     def delete(self, x: int, y: int):
-        thing = self.content[x][y]
+        thing = self.content[x * y - 1]
         self.content[x][y] = None
         return thing
 
     def draw(self, time_delta):
-        pass
+        image_cords = (self.x,
+                       self.y)
+        if self.player.game_state == 'opening':
+            cur_image = self.animation.get_next_sprite(time_delta)
+        elif self.player.game_state == 'closing':
+            cur_image = self.animation.get_next_sprite(time_delta, reversed=True)
+        elif self.player.game_state == 'game':
+            cur_image = self.static_image
+        elif self.player.game_state == 'chest':
+            image_cords = (self.open_window_x, self.open_window_y)
+            cur_image = self.open_chest_image
+        win.blit(cur_image, image_cords)
 
     def check_events(self, time_delta):
-        for i in self.events.events_set:
-            self.events.reaction_dict[i](time_delta)
+        for i in self.events:
+            if i[0] == 'Mouse_down':
+                self.player.game_state = 'chest'
+                self.player.game_state = 'chest'
 
-        self.events.clear()
+        self.events = []
 
     def update(self, time_delta):
         self.check_events(time_delta)
         self.draw(time_delta)
 
+
+class MouseController:
+    def __init__(self, game):
+        self.player = game.player
+        self.inventory = self.player.inventory
+        self.chest = game.chest
+        self.mouse_down = False
+        self.motion_and_down = False
+        self.was_upped = False
+
+    def check_events(self, e, mouse_pos):
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            self.mouse_down = True
+        elif e.type == pygame.MOUSEBUTTONUP:
+            if is_cancel(mouse_pos, self.player.board):
+                self.player.check_events('close')
+            self.mouse_down = False
+            self.motion_and_down = False
+            self.was_upped = True
+        elif e.type == pygame.MOUSEMOTION and self.mouse_down:
+            self.motion_and_down = True
+
+    def update(self,  mouse_pos):
+        print('lol')
+        if self.mouse_down and self.player.game_state == 'game':
+            obj = found_object(mouse_pos)
+            if obj:
+                obj.events.append(('Mouse_down', mouse_pos))
+        elif self.mouse_down and not self.motion_and_down and\
+                self.player.game_state == 'inventory':
+            cell = self.player.inventory.get_cell(mouse_pos)
+            if cell:
+                self.player.change_weapon(self.player.inventory.get_weapon(cell))
+        elif self.mouse_down and self.player.game_state == 'chest':
+            if not self.player.buffer and not self.motion_and_down:
+                exist_cell = check_cell(mouse_pos, self.player)
+                if exist_cell:
+                    self.player.buffer = exist_cell[0].get_cell(exist_cell[1])
+            if self.player.buffer:
+                self.player.buffer.x, self.player.buffer.y = mouse_pos[0], mouse_pos[1]
+        elif self.was_upped and self.player.game_state == 'chest' and self.player.buffer:
+            exist_cell = check_cell(mouse_pos, self.player)
+            if exist_cell and exist_cell[0][exist_cell[1]].append(self.player.buffer):
+                self.player.buffer = None
+            self.was_upped = False
+
+
+def is_cancel(pos, board):
+    if board.cross_x <= pos[0] <= board.cross_x + board.side and \
+            board.cross_y <= pos[1] <= board.cross_y + board.side:
+        return True
+    return False
+
+
+def check_cell(pos, player):
+    inv_x = player.board.cells_x
+    inv_y = player.board.cells_y
+
+    if inv_x <= pos[0] <= player.inventory.cells_x\
+            + player.inventory.cells_w and inv_y <= pos[1]\
+            <= inv_y + player.inventory.cells_h:
+        return [1, 1]
+
+
+def found_object(cords):
+    for i in list_obj:
+        if i.x <= cords[0] <= i.x + i.w and i.y <= cords[1] <= i.y + i.h:
+            return i
+    return False
 
 
 class Player:
@@ -94,8 +205,10 @@ class Player:
         def clear(self):
             self.go_events = list()
 
-    def __init__(self, cords: list):
-        self.cords = cords
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.w, self.h = 50, 50
         self.events = Player.Events(self.go)
         self.animation_dict = {
             'go_forward': Animation('sheet.png', 4, 3)
@@ -107,6 +220,12 @@ class Player:
         self.sprite = pygame.image.load('player_sprite.png').convert()
         self.sprite_size = self.sprite.get_rect().size
         self.has_opened_window = False
+        self.game_state = 'game'
+        self.inventory = Inventory()
+        self.board = self.inventory
+        self.cur_weapon = Weapon()
+        self.inventory.capacity = [self.cur_weapon]
+        self.buffer = None
 
     def check_events(self, time_delta):
         for i in self.events.events_set:
@@ -115,8 +234,8 @@ class Player:
         self.events.clear()
 
     def change_pos(self):
-        self.cords[0] += self.move_buffer[0]
-        self.cords[1] += self.move_buffer[1]
+        self.x += self.move_buffer[0]
+        self.y += self.move_buffer[1]
         self.move_buffer = [0, 0]
 
     def move(self, x, y):
@@ -145,8 +264,8 @@ class Player:
 
     def draw(self, time_delta):
         cur_image = self.animation.get_next_sprite(time_delta)
-        image_cords = (self.cords[0] - self.sprite_size[0] // 2,
-                       self.cords[1] - self.sprite_size[1] // 2)
+        image_cords = (self.x - self.sprite_size[0] // 2,
+                       self.y - self.sprite_size[1] // 2)
         win.blit(cur_image, image_cords)
 
     def update(self, time_delta):
@@ -183,16 +302,19 @@ class Game:
         self.global_game_time = 0
         self.CUR_time_delta = 0
         self.clocker = pygame.time.Clock()
-        self.player = Player([100, 100])
-        self.chest = Chest([300, 300])
+        self.player = Player(100, 100)
+        self.chest = Chest(300, 300, self, 50, 50)
         self.object_list = [self.player, self.chest]
         self.key_controller = KeyController(self.player)
+        self.mouse_controller = MouseController(self)
+        self.mouse_down = False
+        self.motion_and_down = False
+        self.was_upped = True
 
     def check_keyboard(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.RUN = False
-
+        #for event in pygame.event.get():
+        #    if event.type == pygame.QUIT:
+        #        self.RUN = False
 
         keys_checker = pygame.key.get_pressed()
         self.key_controller.send_actions(keys_checker)
@@ -216,17 +338,25 @@ class Game:
 
     def runGame(self):
         while self.RUN:
-            self.clocker.tick()
+            mouse_pos = pygame.mouse.get_pos()
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    self.RUN = False
+                self.mouse_controller.check_events(e, mouse_pos)
+            self.mouse_controller.update(mouse_pos)
             self.check_keyboard()
+
             self.update_state()
             self.time_delta_update()
+            self.clocker.tick(50)
+
 
 pygame.init()
 win = pygame.display.set_mode((500, 500))
 pygame.display.set_caption("Game")
 game = Game()
+list_obj = game.object_list
 game.runGame()
-
 
 
 
