@@ -21,8 +21,14 @@ class SpriteSheet:
 
 
 class Animation:
-    def __init__(self, filename='None', cols=-1, rows=-1):
+    def __init__(self, filename='None', cols=-1, rows=-1, infinite=True, reverse=False):
         self.sprite_sheet = SpriteSheet(filename, cols, rows)
+
+        if reverse:
+            self.sprite_sheet.cells.reverse()
+
+        self.infinite = infinite
+
         self.animation_speed = 500  # pic time in milisec
         self.cur_sprite_index = 0
         self._time_from_last_sprite_update_buffer = 0
@@ -35,10 +41,14 @@ class Animation:
         if how_many_sprites_passed >= 1:
             self._time_from_last_sprite_update_buffer = 0
             if reversed:
+                if not self.infinite and self.cur_sprite_index - how_many_sprites_passed < 0:
+                    return True
                 self.cur_sprite_index = (
                                             self.cur_sprite_index - how_many_sprites_passed)\
                                         % self.sprite_sheet.totalCellCount
             else:
+                if not self.infinite and self.cur_sprite_index + how_many_sprites_passed > self.sprite_sheet.totalCellCount - 1:
+                    return True
                 self.cur_sprite_index = (
                                             self.cur_sprite_index + how_many_sprites_passed)\
                                         % self.sprite_sheet.totalCellCount
