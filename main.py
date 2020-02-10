@@ -187,11 +187,28 @@ def check_cell(pos, player):
 
 
 
+
+
+class Events:
+    def __init__(self, go_func=None):
+        self.go_events = list()
+        self.collision_events = set()
+        self.events_set = set()
+        self.reaction_dict = dict()
+        self.collision_reaction_dict = dict()
+
+    def clear(self):
+        self.go_events = list()
+
+
 def found_object(cords):
     for i in list_obj:
         if i.x <= cords[0] <= i.x + i.w and i.y <= cords[1] <= i.y + i.h:
             return i
     return False
+
+
+
 
 
 class GameObj:
@@ -206,12 +223,23 @@ class PhysicObj(GameObj):
         super().__init__()
         self.hitbox = HitBox(self.cords, self.w, self.h, self.angle)
         self.physics_flags = ['uses_physics']
+        self.events = Events()
+
+    def collision_reaction(self, collige_obj_list):
+        pass
 
 
 class Shell(PhysicObj):
     def __init__(self):
         super().__init__()
         self.physics_flags.append('shell')
+
+    def collision_reaction(self, collige_obj_list):
+        super().collision_reaction(collige_obj_list)
+
+        for i in collige_obj_list:
+            if
+
 
 
 class HardObj(PhysicObj):
@@ -226,25 +254,15 @@ class Creature(PhysicObj):
         self.physics_flags.append('Creature')
 
 
-class Events:
-    def __init__(self, go_func=None):
-        self.go_events = list()
-        self.collision_events = set()
-        self.events_set = set()
-        self.reaction_dict = {
-                'go': go_func
-            }
 
-    def clear(self):
-        self.go_events = list()
-
-class Player:
-
+class Player(Creature):
     def __init__(self, x, y):
+        super().__init__()
         self.x = x
         self.y = y
         self.w, self.h = 50, 50
-        self.events = Events(self.go)
+        self.events.reaction_dict['go'] = self.go
+
         self.animation_dict = {
             'go_forward': Animation('sheet.png', 4, 3)
         }
