@@ -57,7 +57,7 @@ class Inventory:
         self.open_window_h = 620
         self.cells_x, self.cells_y = 60, 60
         self.cells_w, self.cells_h = 600, 600
-        self.side = 90
+        self.cell_side = 90
         self.cross_x = 620
         self.cross_y = 40
         self.cross_side = 20
@@ -67,8 +67,8 @@ class Inventory:
     def get_cell(self, pos):
         if self.cells_x <= pos[0] <= self.cells_x + self.cells_w \
                 and self.cells_y <= pos[1] <= self.cells_h + self.cells_y:
-            cell = (((pos[0] - self.cells_x) // self.side) + 1) *\
-                   (((pos[1] - self.cells_y) // self.side) + 1) - 2
+            cell = (((pos[0] - self.cells_x) // self.cell_side) + 1) *\
+                   (((pos[1] - self.cells_y) // self.cell_side) + 1) - 2
             if cell <= len(self.content):
                 thing = self.content[cell]
             else:
@@ -157,6 +157,14 @@ class Chest:
             image_cords = (self.window_x, self.window_y)
             cur_image = self.open_chest_image
         win.blit(cur_image, image_cords)
+        if self.player.game_state == 'chest':
+            for i in range(len(self.content)):
+                if not self.content[i].x and not self.content[i].y:
+                    x = self.cells_x + (i % 5) * self.cell_side
+                    y = self.cells_y + i // 5 * self.cell_side
+                else:
+                    x, y = self.content[i].x, self.content[i].y
+                win.blit(self.content[i].image, (x, y))
 
     def check_events(self, time_delta):
         for i in self.events:
@@ -171,8 +179,8 @@ class Chest:
 
 
 def is_cancel(pos, board):
-    if board.cross_x <= pos[0] <= board.cross_x + board.side and \
-            board.cross_y <= pos[1] <= board.cross_y + board.side:
+    if board.cross_x <= pos[0] <= board.cross_x + board.cell_side and \
+            board.cross_y <= pos[1] <= board.cross_y + board.cell_side:
         return True
     return False
 
@@ -270,12 +278,17 @@ class Player:
         self.draw(time_delta)
 
     def create_buffer(self, pos, thing: Weapon, cell, board):
-        y = (cell // 5) * board.cell_size + board.cells_y
-        x = (cell % 5) * board.cell_size + board.cells_x
+        y = (cell // 5) * board.cell_side + board.cells_y
+        x = (cell % 5) * board.cell_side + board.cells_x
         delta_x = pos[0] - x
         delta_y = pos[1] - y
         thing.append_in_buffer(delta_x, delta_y, pos)
-        self.buffer = thing
+        self.buffer = thing, cell, board
+
+    def delete_buffer(self):
+        self.buffer.delete_from_buffer()
+        self.buffer = None
+        self.board.delete(self.buffer[1])
 
     def open_window(self, game_state):
         self.game_state = game_state
@@ -328,11 +341,13 @@ class MouseController:
         elif self.was_upped and player.game_state == 'chest' \
                 and player.buffer:
             cell = player.inventory.get_cell(mouse_pos)
+            board = player.inventory
             if not cell:
                 player.chest.get_cell(mouse_pos)
-            if not cell[1]:
-                player.append(player.buffer)
-                player.buffer.delete_from_buffer()
+                board = player.chest
+            if cell and not cell[1]:
+                board.append(player.buffer)
+                player.delete_buffer()
 
 
 class KeyController:
