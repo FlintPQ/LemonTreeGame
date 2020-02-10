@@ -187,6 +187,11 @@ def check_cell(pos, player):
 
 
 
+def found_object(cords):
+    for i in list_obj:
+        if i.x <= cords[0] <= i.x + i.w and i.y <= cords[1] <= i.y + i.h:
+            return i
+    return False
 
 
 class Events:
@@ -201,21 +206,14 @@ class Events:
         self.go_events = list()
 
 
-def found_object(cords):
-    for i in list_obj:
-        if i.x <= cords[0] <= i.x + i.w and i.y <= cords[1] <= i.y + i.h:
-            return i
-    return False
-
-
-
-
-
 class GameObj:
     def __init__(self, cords=(0, 0), w=50, h=50):
         self.cords = list(cords)
         self.w, self.h = 50, 50
         self.angle = [0]
+
+    def kill(self):
+        del self
 
 
 class PhysicObj(GameObj):
@@ -238,7 +236,8 @@ class Shell(PhysicObj):
         super().collision_reaction(collige_obj_list)
 
         for i in collige_obj_list:
-            if
+            if 'hard' in i.physics_flags:
+                self.kill()
 
 
 
