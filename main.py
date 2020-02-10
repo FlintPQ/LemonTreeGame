@@ -3,7 +3,7 @@ import string
 from config import CONFIG
 import pygame
 from config import CONFIG, keys_dict
-from utils import Animation
+from utils import Animation, HitBox
 import os
 
 
@@ -144,13 +144,13 @@ class MouseController:
         elif e.type == pygame.MOUSEMOTION and self.mouse_down:
             self.motion_and_down = True
 
-    def update(self,  mouse_pos):
+    def update(self, mouse_pos):
         print('lol')
         if self.mouse_down and self.player.game_state == 'game':
             obj = found_object(mouse_pos)
             if obj:
                 obj.events.append(('Mouse_down', mouse_pos))
-        elif self.mouse_down and not self.motion_and_down and\
+        elif self.mouse_down and not self.motion_and_down and \
                 self.player.game_state == 'inventory':
             cell = self.player.inventory.get_cell(mouse_pos)
             if cell:
@@ -180,10 +180,11 @@ def check_cell(pos, player):
     inv_x = player.board.cells_x
     inv_y = player.board.cells_y
 
-    if inv_x <= pos[0] <= player.inventory.cells_x\
-            + player.inventory.cells_w and inv_y <= pos[1]\
+    if inv_x <= pos[0] <= player.inventory.cells_x \
+            + player.inventory.cells_w and inv_y <= pos[1] \
             <= inv_y + player.inventory.cells_h:
         return [1, 1]
+
 
 
 def found_object(cords):
@@ -193,23 +194,57 @@ def found_object(cords):
     return False
 
 
-class Player:
-    class Events:
-        def __init__(self, go_func=None):
-            self.go_events = list()
-            self.events_set = set()
-            self.reaction_dict = {
+class GameObj:
+    def __init__(self, cords=(0, 0), w=50, h=50):
+        self.cords = list(cords)
+        self.w, self.h = 50, 50
+        self.angle = [0]
+
+
+class PhysicObj(GameObj):
+    def __init__(self):
+        super().__init__()
+        self.hitbox = HitBox(self.cords, self.w, self.h, self.angle)
+        self.physics_flags = ['uses_physics']
+
+
+class Shell(PhysicObj):
+    def __init__(self):
+        super().__init__()
+        self.physics_flags.append('shell')
+
+
+class HardObj(PhysicObj):
+    def __init__(self):
+        super().__init__()
+        self.physics_flags.append('hard')
+
+
+class Creature(PhysicObj):
+    def __init__(self):
+        super().__init__()
+        self.physics_flags.append('Creature')
+
+
+class Events:
+    def __init__(self, go_func=None):
+        self.go_events = list()
+        self.collision_events = set()
+        self.events_set = set()
+        self.reaction_dict = {
                 'go': go_func
             }
 
-        def clear(self):
-            self.go_events = list()
+    def clear(self):
+        self.go_events = list()
+
+class Player:
 
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.w, self.h = 50, 50
-        self.events = Player.Events(self.go)
+        self.events = Events(self.go)
         self.animation_dict = {
             'go_forward': Animation('sheet.png', 4, 3)
         }
@@ -232,6 +267,9 @@ class Player:
             self.events.reaction_dict[i](time_delta)
 
         self.events.clear()
+
+    def cencel_move(self):
+        self.move_buffer = [0, 0]
 
     def change_pos(self):
         self.x += self.move_buffer[0]
@@ -312,7 +350,7 @@ class Game:
         self.was_upped = True
 
     def check_keyboard(self):
-        #for event in pygame.event.get():
+        # for event in pygame.event.get():
         #    if event.type == pygame.QUIT:
         #        self.RUN = False
 
@@ -358,8 +396,6 @@ game = Game()
 list_obj = game.object_list
 game.runGame()
 
-
-
-    # print(proj_clock.get_fps())
+# print(proj_clock.get_fps())
 
 pygame.quit()
