@@ -301,6 +301,8 @@ class Player:
         image_cords = (self.x - self.sprite_size[0] // 2,
                        self.y - self.sprite_size[1] // 2)
         win.blit(cur_image, image_cords)
+        if self.buffer:
+            win.blit(self.buffer[0].image, (self.buffer[0].x, self.buffer[0].y))
 
     def update(self, time_delta):
         self.check_events(time_delta)
