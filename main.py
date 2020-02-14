@@ -74,7 +74,7 @@ class Inventory:
                 and self.cells_y <= pos[1] <= self.cells_h + self.cells_y:
             cell = (((pos[0] - self.cells_x) // self.cell_side) + 1) *\
                    (((pos[1] - self.cells_y) // self.cell_side) + 1) - 2
-            if cell <= len(self.content):
+            if cell < len(self.content):
                 thing = self.content[cell]
             else:
                 thing = None
@@ -152,7 +152,7 @@ class Chest:
                 and self.cells_y <= pos[1] <= self.cells_h:
             cell = (((pos[0] - self.cells_x) // self.cell_side) + 1) * \
                      (((pos[1] - self.cells_y) // self.cell_side) + 1) - 2
-            if cell <= len(self.content):
+            if cell < len(self.content):
                 thing = self.content[cell]
             else:
                 thing = None
@@ -185,8 +185,8 @@ class Chest:
         if self.state == 'open':
             for i in range(len(self.content)):
                 if not self.content[i].x and not self.content[i].y:
-                    x = self.cells_x + (i % 5) * self.cell_side
-                    y = self.cells_y + i // 5 * self.cell_side
+                    x = self.cells_x + (i % 4) * self.cell_side
+                    y = self.cells_y + i // 4 * self.cell_side
                 else:
                     x, y = self.content[i].x, self.content[i].y
                 win.blit(self.content[i].image, (x, y))
@@ -308,8 +308,8 @@ class Player:
         self.draw(time_delta)
 
     def create_buffer(self, pos, thing: Weapon, cell, board):
-        y = (cell // 5) * board.cell_side + board.cells_y
-        x = (cell % 5) * board.cell_side + board.cells_x
+        y = (cell // 4) * board.cell_side + board.cells_y
+        x = (cell % 4) * board.cell_side + board.cells_x
         delta_x = pos[0] - x
         delta_y = pos[1] - y
         thing.append_in_buffer(delta_x, delta_y, pos)
@@ -318,7 +318,6 @@ class Player:
     def delete_buffer(self):
         print(self.buffer)
         self.buffer[0].delete_from_buffer()
-        self.board.delete(self.buffer[2])
         self.buffer = None
 
     def open_window(self, game_state):
@@ -380,8 +379,8 @@ class MouseController:
             print('send.message to CIGUI')
         if e.type == pygame.MOUSEBUTTONDOWN:
             obj = found_object(mouse_pos)
-            if obj:
-                obj.events.append('Mouse_down')
+            #if obj:
+                #obj.events.append('Mouse_down')
             if type(obj) == Chest:
                 self.chest_inventory_gui = ChestInventoryGUI(obj, player.inventory, player)
                 obj.state = 'open'
