@@ -48,17 +48,17 @@ class Weapon:
 
 
 class Inventory:
-    def __init__(self, player):
-        self.player = player
+    def __init__(self):
         self.content = []
-        self.capacity = 20
+        self.capacity = 16
         self.x = 680
         self.y = 900
+        self.w, self.h = 70, 50
         self.window_x = 40
         self.window_y = 40
         self.window_w = 500
         self.window_h = 500
-        self.cells_x, self.cells_y = 60, 60
+        self.cells_x, self.cells_y = 90, 80
         self.cells_w, self.cells_h = 460, 460
         self.cell_side = 115
         self.cross_x = 540
@@ -83,23 +83,26 @@ class Inventory:
 
     def check_events(self):
         for i in self.events:
-            if i == 'Mouse_down':
+            if i == 'open':
                 self.state = 'open'
-                self.player.open_window('inventory')
+            elif i == 'close':
+                self.state = 'close'
 
         self.events = []
 
-    def append(self, obj):
+    def append(self, thing):
         if len(self.content) < self.capacity:
-            self.content.append(obj)
+            self.content.append(thing)
+            return True
+        return False
 
     def delete(self, cell):
         del self.content[cell]
 
     def draw(self):
         if self.state == 'closed':
-            win.blit(self.closed_omage, (self.x, self.y))
-        elif game_state == 'open':
+            win.blit(self.closed_omage, (self.window_x, self.window_y))
+        elif self.state == 'open':
             win.blit(self.open_image, (self.window_x, self.window_y))
             for i in range(len(self.content)):
                 if not self.content[i].x and not self.content[i].y:
@@ -112,7 +115,7 @@ class Inventory:
     def append_event(self, e):
         self.events.append(e)
 
-    def update(self):
+    def update(self, time_delta):
         self.check_events()
         self.draw()
 
@@ -123,15 +126,15 @@ class Chest:
         self.y = y
         self.h = 31
         self.w = 30
-        self.capacity = 20
+        self.capacity = 16
         self.content = list(args)
-        self.window_x = 680
-        self.window_y = 60
+        self.window_x = 540
+        self.window_y = 40
         self.open_window_h = 620
         self.open_window_w = 620
         self.cell_side = 115
-        self.cells_x = 560
-        self.cells_y = 60
+        self.cells_x = 590
+        self.cells_y = 80
         self.cells_w, self.cells_h = 460, 460
         self.cross_x, self.cross_y = 1040, 40
         self.cross_side = 35
@@ -156,16 +159,15 @@ class Chest:
             return cell, thing
         return None
 
-    def append(self, thing, x, y):
-        if not self.content[x * y]:
-            self.content[x * y - 1] = thing
+    def append(self, thing):
+        if len(self.content) < self.capacity:
+            self.content.append(thing)
             return True
         return False
 
-    def delete(self, x: int, y: int):
-        thing = self.content[x * y - 1]
-        self.content[x][y] = None
-        return thing
+    def delete(self, cell):
+        del self.content[cell]
+        return True
 
     def draw(self, time_delta):
         image_cords = (self.x,
@@ -191,10 +193,11 @@ class Chest:
 
     def check_events(self, time_delta):
         for i in self.events:
-            if i[0] == 'Mouse_down':
-                self.state = 'opening'
-                self.player.open_window('chest')
-                self.player.append_chest(self)
+            if i == 'open':
+                self.state = 'open'
+            elif i == 'close':
+                self.state = 'close'
+
         self.events = []
 
     def append_event(self, e):
@@ -247,7 +250,7 @@ class Player:
         self.sprite_size = self.sprite.get_rect().size
         self.has_opened_window = False
         self.game_state = 'game'
-        self.inventory = Inventory(self)
+        self.inventory = Inventory()
         self.board = self.inventory
         self.cur_weapon = Weapon()
         self.inventory.content = [Weapon(), Weapon(), Weapon()]
@@ -310,12 +313,13 @@ class Player:
         delta_x = pos[0] - x
         delta_y = pos[1] - y
         thing.append_in_buffer(delta_x, delta_y, pos)
-        self.buffer = thing, cell, board
+        self.buffer = thing, board, cell
 
     def delete_buffer(self):
-        self.buffer.delete_from_buffer()
+        print(self.buffer)
+        self.buffer[0].delete_from_buffer()
+        self.board.delete(self.buffer[2])
         self.buffer = None
-        self.board.delete(self.buffer[1])
 
     def open_window(self, game_state):
         self.game_state = game_state
@@ -326,56 +330,68 @@ class Player:
         self.has_opened_window = False
 
 
+class ChestInventoryGUI:
+    def __init__(self, chest: Chest, inventory: Inventory, player: Player):
+        self.inventory = inventory
+        self.chest = chest
+        self.player = player
+
+    def do_event(self, e, pos):
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            if is_cancel(pos, self.chest):
+                return False
+            cell = self.chest.get_cell(pos)
+            board = self.chest
+            if not cell:
+                cell = self.inventory.get_cell(pos)
+                board = self.inventory
+            if cell and cell[1]:
+                board.delete(cell[0])
+                self.player.create_buffer(pos, cell[1], cell[0], board)
+        elif e.type == pygame.MOUSEBUTTONUP:
+            if self.player.buffer:
+                cell = self.chest.get_cell(pos)
+                board = self.chest
+                if not cell:
+                    cell = self.inventory.get_cell(pos)
+                    board = self.inventory
+                if cell:
+                    board.append(cell[1])
+                else:
+                    self.player.buffer[1].append(self.player.buffer[0])
+                self.player.delete_buffer()
+        elif e.type == pygame.MOUSEMOTION:
+            if self.player.buffer:
+                self.player.buffer[0].update_pos(pos)
+        return True
+
+    def update(self):
+        pass
+
+
 class MouseController:
     def __init__(self):
-        self.mouse_down = False
-        self.motion_and_down = False
-        self.was_upped = False
+        self.chest_inventory_gui = None
 
     def check_events(self, e, mouse_pos, player):
+        if self.chest_inventory_gui and player.game_state == 'chest':
+            if not self.chest_inventory_gui.do_event(e, mouse_pos):
+                self.chest_inventory_gui = None
+            print('send.message to CIGUI')
         if e.type == pygame.MOUSEBUTTONDOWN:
-            self.mouse_down = True
-        elif e.type == pygame.MOUSEBUTTONUP:
-            if is_cancel(mouse_pos, player.board):
-                player.check_events('close')
-            self.mouse_down = False
-            self.motion_and_down = False
-            self.was_upped = True
-        elif e.type == pygame.MOUSEMOTION and self.mouse_down:
-            self.motion_and_down = True
-
-    def update(self, mouse_pos, player, game_state):
-        if self.mouse_down and not self.motion_and_down \
-                and game_state == 'game':
             obj = found_object(mouse_pos)
             if obj:
-                obj.append_event(('Mouse_down', mouse_pos))
-        elif self.mouse_down and not self.motion_and_down and\
-                game_state == 'inventory':
-            cell = player.inventory.get_cell(mouse_pos)
-            if cell:
-                player.change_weapon(player.inventory.get_weapon(cell))
-        elif self.mouse_down and game_state == 'chest':
-            if not player.buffer and not self.motion_and_down:
-                cell = player.inventory.get_cell(mouse_pos)
-                board = player.inventory
-                if not cell:
-                    cell = player.chest.get_cell(mouse_pos)
-                    board = player.chest
-                    print(cell, board)
-                if cell and cell[1] and not player.buffer:
-                    player.create_buffer(mouse_pos, cell[1], cell[0], board)
-                    print('create buffer')
-        elif self.was_upped and game_state == 'chest' \
-                and player.buffer:
-            cell = player.inventory.get_cell(mouse_pos)
-            board = player.inventory
-            if not cell:
-                player.chest.get_cell(mouse_pos)
-                board = player.chest
-            if cell and not cell[1]:
-                board.append(player.buffer)
-                player.delete_buffer()
+                obj.events.append('Mouse_down')
+            if type(obj) == Chest:
+                self.chest_inventory_gui = ChestInventoryGUI(obj, player.inventory, player)
+                obj.state = 'open'
+                player.game_state = 'chest'
+                player.inventory.state = 'open'
+                print('create bufffer')
+        elif e.type == pygame.MOUSEBUTTONUP:
+            pass
+        elif e.type == pygame.MOUSEMOTION:
+            pass
 
 
 class KeyController:
@@ -409,8 +425,8 @@ class Game:
         self.clocker = pygame.time.Clock()
         self.player = Player(100, 100)
         self.inventory = self.player.inventory
-        self.chest = Chest(300, 300, self, Weapon(), Weapon())
-        self.object_list = [self.player, self.chest, self.inventory]
+        self.chest = Chest(300, 300, Weapon(), Weapon())
+        self.object_list = [self.player, self.inventory, self.chest]
         self.key_controller = KeyController(self.player)
         self.mouse_controller = MouseController()
 
@@ -446,8 +462,6 @@ class Game:
                 if e.type == pygame.QUIT:
                     self.RUN = False
                 self.mouse_controller.check_events(e, mouse_pos, self.player)
-            self.mouse_controller.update(mouse_pos, self.player,
-                                         self.player.game_state)
             self.check_keyboard()
 
             self.update_state()
