@@ -73,7 +73,6 @@ def summarize_angles(angle1, angle2):
     if angle1 >= 360:
         angle1 -= 360
 
-
 class HitBoxDot:
     def __init__(self, cords, R, basic_angle):
         self.x = cords[0]
@@ -108,10 +107,15 @@ class HitBox:
         for _ in self.dots_list:
             _.update(self.cords, self.angle[0])
 
+def skalar(dot1, dot2):
+    return dot1.x * dot2.x + dot1.y * dot2.y
 
-class PhysicsChecker:
+class Physics:
     def __init__(self, cur_games_obj_set):
         self.all_objects = cur_games_obj_set
+
+
+
 
     def check_collisions(self):
         for i in self.all_objects:
@@ -134,6 +138,7 @@ class PhysicsChecker:
                     return True
                 else:
                     return False
+
 
     def check_lines_collision(self, cords1, cords2, cords3, cords4):
         x1, y1 = cords1
@@ -158,11 +163,15 @@ class PhysicsChecker:
             else:
                 return 0  # Lines hasn't got collision and they are not parallel
 
+class Dot:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
-class IPhysics:
-    def __init__(self):
-        self.physics_flags = {'uses_physics'}
-        self.hitbox = HitBox(self.cords)
+
+g = PhysicsChecker(list())
+
+print(g.checkIntersectionOfTwoLineSegments(Dot(100, 100), Dot(200, 200), Dot(200, 100), Dot(100, 200)))
 
 
 pygame.init()
